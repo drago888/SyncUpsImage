@@ -1,2 +1,4 @@
 Release/
 deps/
+.vs/
+.git/
