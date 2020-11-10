@@ -1,0 +1,5 @@
+﻿  SyncUpsImage.cpp
+D:\SyncUpsImage\SyncUpsImage\SyncUpsImage.cpp(58,23): warning C4018: '<': signed/unsigned mismatch
+D:\SyncUpsImage\SyncUpsImage\SyncUpsImage.cpp(62,27): warning C4018: '<': signed/unsigned mismatch
+  SyncUpsImage.vcxproj -> D:\SyncUpsImage\SyncUpsImage\Debug\SyncUpsImage.exe
+          1 file(s) copied.

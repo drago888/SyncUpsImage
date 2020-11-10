@@ -1,0 +1,2 @@
+D:\SyncUpsImage\SyncUpsImage\Debug\SyncUpsImage.exe
+D:\SyncUpsImage\SyncUpsImage\Debug\SyncUpsImage.pdb

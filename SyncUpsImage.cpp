@@ -37,6 +37,9 @@ FIBITMAP* GenericLoader(const char* lpszPathName, int flag) {
 int fixTransparent(std::string srcFileName, std::string dstFileName, int scale, unsigned long* transparent)
 {
     bool haveTransparent = false;
+    int transparentColor8bits = 0;
+    RGBQUAD backgroundColor;
+    backgroundColor.rgbRed = 255, backgroundColor.rgbGreen = 255, backgroundColor.rgbBlue = 255, backgroundColor.rgbReserved = 255;
 
     FIBITMAP* srcImg = GenericLoader(srcFileName.data(), 0);
     int srcBytespp = FreeImage_GetLine(srcImg) / FreeImage_GetWidth(srcImg);
@@ -47,6 +50,21 @@ int fixTransparent(std::string srcFileName, std::string dstFileName, int scale, 
     }
     BYTE* srcBits = (BYTE*)FreeImage_GetBits(srcImg);
     unsigned srcWidth = FreeImage_GetWidth(srcImg), srcHeight = FreeImage_GetHeight(srcImg);
+
+    if (FreeImage_IsTransparent(srcImg) )
+    {
+        transparentColor8bits = FreeImage_GetTransparentIndex(srcImg);
+    }
+    else
+    {
+        FreeImage_Unload(srcImg);
+        return 0;
+    }
+
+    if (FreeImage_HasBackgroundColor(srcImg))
+    {
+        FreeImage_GetBackgroundColor(srcImg, &backgroundColor);
+    }
 
     FIBITMAP* dst = GenericLoader(dstFileName.data(), 0);
     FIBITMAP* dstImg = FreeImage_ConvertTo32Bits(dst);
@@ -62,7 +80,7 @@ int fixTransparent(std::string srcFileName, std::string dstFileName, int scale, 
         for (int c = 0; c < srcWidth; ++c)
         {
             // transparent
-            if ((srcBytespp == 1 && srcBits[c] == 0)
+            if ((srcBytespp == 1 && transparentColor8bits >= 0 && srcBits[c] == transparentColor8bits)
                 || (srcBytespp == 4 && srcBits[c * 4 + FI_RGBA_ALPHA] == 0))
             {
                 haveTransparent = true;
