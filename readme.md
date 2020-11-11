@@ -10,13 +10,18 @@ This is due to ESRGan unable to process transparent pixel properly.
 You can get it from the link below  
 [Library & binary - https://drive.google.com/drive/folders/1tMoPEqmbcM9h0Rtr7Pu2D3pqcng8tGqo?usp=sharing](https://drive.google.com/drive/folders/1tMoPEqmbcM9h0Rtr7Pu2D3pqcng8tGqo?usp=sharing)
 
-## What is the scale parameter?
+## What is the scale parameter (Third parameter)?
 It is the scale factor use to upscale the factor in ESRGanResizer. Eg 4 for 4x
 
-## What is the tolerance parameter?
+## What is the tolerance parameter(Fourth parameter)?
 It is the tolerance for deviation from the background color. With 0 tolerance, it must be exactly the background color before it is converted to transparent  
 For the images that I am using, I find that tolerance of 150 gives quite a good result.
 
 ## How to use it?
 Run the below command  
   SyncUpsImage "C:\dest" "c:\src" 4 2
+
+First parameter is the destination directory of the images to be modified.
+Second parameter is the source directory of original images to be compared with.
+Third parameter is the scale factor. Thus for 4x scaling, it will be 4.
+Fourth parameter is the tolerance for transparency. 
