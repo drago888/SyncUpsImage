@@ -1,7 +1,7 @@
 # SyncUpsImage
 ## What does Sync Upscaled Image do?
 It compares the images upscaled by ESRGanResizer with the source image and change the destination image extension to match the source image.  
-If the source image has transparent pixels(will treat 8 bits images with value 0 as transparent), will also modify the destination image to match it.
+If the source image has transparent pixels, will also modify the destination image to match it.
 
 It is used in conjunction with Trans2Png. Run Trans2Png to convert transparent background to background color before passing to ESRGanResizer.  
 This is due to ESRGan unable to process transparent pixel properly.
