@@ -34,7 +34,7 @@ FIBITMAP* GenericLoader(const char* lpszPathName, int flag) {
 
 
 // return 0 if successful, 1 if failed
-int fixTransparent(std::string srcFileName, std::string dstFileName, int scale, unsigned long* transparent)
+int fixTransparent(std::string srcFileName, std::string dstFileName, int scale, unsigned long* transparent, int tolerance)
 {
     bool haveTransparent = false;
     int transparentColor8bits = 0;
@@ -90,10 +90,19 @@ int fixTransparent(std::string srcFileName, std::string dstFileName, int scale, 
                     dstBits = FreeImage_GetScanLine(dstImg, r * scale + dst_r);
                     for (int dst_c = 0; dst_c < scale; ++dst_c)
                     {
-                        dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] = 0;
-                        dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] = 0;
-                        dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] = 0;
-                        dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_ALPHA] = 0;
+                        if (dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] >= backgroundColor.rgbRed - tolerance
+                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] <= backgroundColor.rgbRed + tolerance
+                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] >= backgroundColor.rgbGreen - tolerance
+                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] <= backgroundColor.rgbGreen + tolerance
+                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] >= backgroundColor.rgbBlue - tolerance
+                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] <= backgroundColor.rgbBlue + tolerance
+                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_ALPHA] == 0xff)
+                        {
+                            dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] = 0;
+                            dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] = 0;
+                            dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] = 0;
+                            dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_ALPHA] = 0;
+                        }
                     }
                 }
             }
@@ -114,17 +123,18 @@ int fixTransparent(std::string srcFileName, std::string dstFileName, int scale, 
 
 int main(int argc, char** argv)
 {
-    if (argc != 4)
+    if (argc != 5)
     {
         std::cout << "Wrong number of parameters. See below on syntax." << std::endl;
-        std::cout << "   SyncUpsImage \"destination directory\" \"source directory\" scale_size" << std::endl;
-        std::cout << "   Eg  : SyncUpsImage \"D:\\dest\" \"D:\\src\" 4";
+        std::cout << "   SyncUpsImage \"destination directory\" \"source directory\" scale_size tolerance" << std::endl;
+        std::cout << "   Eg  : SyncUpsImage \"D:\\dest\" \"D:\\src\" 4 2";
         exit(1);
     }
 
     std::string srcDirName = argv[2];
     std::string dstDirName = argv[1];
     int scale = atoi(argv[3]);
+    int tolerance = atoi(argv[4]);
 
     unsigned long filesSuccess = 0, filesExtChanged = 0, filesFailed = 0, totalFiles = 0, filesTransparent = 0;
     std::filesystem::directory_iterator dst_it(argv[1]), src_it;
@@ -136,65 +146,68 @@ int main(int argc, char** argv)
         std::cout << "The third argument scale must be a whole number.";
         exit(1);
     }
-    else
+    if (!tolerance)
     {
-        for (const auto& dst : dst_it)
+        std::cout << "The fourth argument tolerance must be a whole number.";
+        exit(1);
+    }
+
+    for (const auto& dst : dst_it)
+    {
+        if (!dst.is_regular_file())
         {
-            if (!dst.is_regular_file())
-            {
-                continue;
-            }
-            std::string dstPath = std::filesystem::absolute(dst).string();
-            int startOfDstFileName = (dstPath.find_last_of("/") == std::string::npos ? 0 : dstPath.find_last_of("/"))
-                + (dstPath.find_last_of("\\") == std::string::npos ? 0 : dstPath.find_last_of("\\")) + 1;
-            std::string dstFileWoExt = dstPath.substr(startOfDstFileName, dstPath.find_last_of(".") - startOfDstFileName);
-            std::string dstFileExt = dstPath.substr(dstPath.find_last_of("."));
-            if (dstFileExt.size() <= 0)
-            {
-                std::cout << "Destination file - " + dstPath + " does not have a file extension. Ignored.";
-                filesFailed++;
-                totalFiles++;
-                continue;
-            }
-
-            bool matchingFileFound = false;
-            src_it = std::filesystem::directory_iterator(argv[2]);
-            for (const auto& src : src_it)
-            {
-                if (!src.is_regular_file())
-                {
-                    continue;
-                }
-                std::string srcPath = std::filesystem::absolute(src).string();
-                int startOfSrcFileName = (srcPath.find_last_of("/") == std::string::npos ? 0 : srcPath.find_last_of("/"))
-                    + (srcPath.find_last_of("\\") == std::string::npos ? 0 : srcPath.find_last_of("\\")) + 1;
-                std::string srcFileWoExt = srcPath.substr(startOfSrcFileName, srcPath.find_last_of(".") - startOfSrcFileName);
-                std::string srcFileExt = srcPath.substr(srcPath.find_last_of("."));
-                if (srcFileWoExt == dstFileWoExt)
-                {
-                    // must be before rename else filename will be wrong
-                    int status = fixTransparent(srcPath, dstPath, scale, &filesTransparent);
-
-                    matchingFileFound = true;
-                    if (srcFileExt != dstFileExt)
-                    {
-                        std::filesystem::rename(dstPath, dstPath.substr(0, startOfDstFileName) + dstFileWoExt + srcFileExt);
-                        filesExtChanged++;
-                    }
-
-                    filesFailed += status;
-                    filesSuccess += status == 0 ? 1 : 0;
-                    break;
-                }
-            }
-
-            if (!matchingFileFound)
-            {
-                std::cout << "Unable to find corresponding file in source directory for - " + dstPath << std::endl;
-                filesFailed++;
-            }
-            totalFiles++;
+            continue;
         }
+        std::string dstPath = std::filesystem::absolute(dst).string();
+        int startOfDstFileName = (dstPath.find_last_of("/") == std::string::npos ? 0 : dstPath.find_last_of("/"))
+            + (dstPath.find_last_of("\\") == std::string::npos ? 0 : dstPath.find_last_of("\\")) + 1;
+        std::string dstFileWoExt = dstPath.substr(startOfDstFileName, dstPath.find_last_of(".") - startOfDstFileName);
+        std::string dstFileExt = dstPath.substr(dstPath.find_last_of("."));
+        if (dstFileExt.size() <= 0)
+        {
+            std::cout << "Destination file - " + dstPath + " does not have a file extension. Ignored.";
+            filesFailed++;
+            totalFiles++;
+            continue;
+        }
+
+        bool matchingFileFound = false;
+        src_it = std::filesystem::directory_iterator(argv[2]);
+        for (const auto& src : src_it)
+        {
+            if (!src.is_regular_file())
+            {
+                continue;
+            }
+            std::string srcPath = std::filesystem::absolute(src).string();
+            int startOfSrcFileName = (srcPath.find_last_of("/") == std::string::npos ? 0 : srcPath.find_last_of("/"))
+                + (srcPath.find_last_of("\\") == std::string::npos ? 0 : srcPath.find_last_of("\\")) + 1;
+            std::string srcFileWoExt = srcPath.substr(startOfSrcFileName, srcPath.find_last_of(".") - startOfSrcFileName);
+            std::string srcFileExt = srcPath.substr(srcPath.find_last_of("."));
+            if (srcFileWoExt == dstFileWoExt)
+            {
+                // must be before rename else filename will be wrong
+                int status = fixTransparent(srcPath, dstPath, scale, &filesTransparent, tolerance);
+
+                matchingFileFound = true;
+                if (srcFileExt != dstFileExt)
+                {
+                    std::filesystem::rename(dstPath, dstPath.substr(0, startOfDstFileName) + dstFileWoExt + srcFileExt);
+                    filesExtChanged++;
+                }
+
+                filesFailed += status;
+                filesSuccess += status == 0 ? 1 : 0;
+                break;
+            }
+        }
+
+        if (!matchingFileFound)
+        {
+            std::cout << "Unable to find corresponding file in source directory for - " + dstPath << std::endl;
+            filesFailed++;
+        }
+        totalFiles++;
     }
 
     std::cout << std::endl << "Scale factor indicated : " << scale << std::endl;
