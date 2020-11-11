@@ -15,7 +15,7 @@ It is the scale factor use to upscale the factor in ESRGanResizer. Eg 4 for 4x
 
 ## What is the tolerance parameter(Fourth parameter)?
 It is the tolerance for deviation from the background color. With 0 tolerance, it must be exactly the background color before it is converted to transparent  
-For the images that I am using, I find that tolerance of 150 gives quite a good result.
+For the images that I am using, I find that tolerance of 90 gives quite a good result.
 
 ## How to use it?
 Run the below command  
