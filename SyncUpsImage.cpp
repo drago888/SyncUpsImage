@@ -85,23 +85,30 @@ int fixTransparent(std::string srcFileName, std::string dstFileName, int scale, 
             {
                 haveTransparent = true;
 
-                for (int dst_r = 0; dst_r < scale; ++dst_r)
+                // not only check the transparent pixels but also half the scale pixels around the transparent
+                for (int dst_r = 0 - scale / 2; dst_r < scale * 1.5; ++dst_r)
                 {
-                    dstBits = FreeImage_GetScanLine(dstImg, r * scale + dst_r);
-                    for (int dst_c = 0; dst_c < scale; ++dst_c)
+                    if (r + dst_r >= 0 && r + dst_r <= dstHeight)
                     {
-                        if (dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] >= backgroundColor.rgbRed - tolerance
-                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] <= backgroundColor.rgbRed + tolerance
-                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] >= backgroundColor.rgbGreen - tolerance
-                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] <= backgroundColor.rgbGreen + tolerance
-                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] >= backgroundColor.rgbBlue - tolerance
-                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] <= backgroundColor.rgbBlue + tolerance
-                            && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_ALPHA] == 0xff)
+                        dstBits = FreeImage_GetScanLine(dstImg, r * scale + dst_r);
+                        for (int dst_c = 0 - scale / 2; dst_c < scale * 1.5; ++dst_c)
                         {
-                            dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] = 0;
-                            dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] = 0;
-                            dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] = 0;
-                            dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_ALPHA] = 0;
+                            if (c + dst_c >= 0 && c + dst_c <= dstWidth)
+                            {
+                                if (dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] >= backgroundColor.rgbRed - tolerance
+                                    && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] <= backgroundColor.rgbRed + tolerance
+                                    && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] >= backgroundColor.rgbGreen - tolerance
+                                    && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] <= backgroundColor.rgbGreen + tolerance
+                                    && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] >= backgroundColor.rgbBlue - tolerance
+                                    && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] <= backgroundColor.rgbBlue + tolerance
+                                    && dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_ALPHA] == 0xff)
+                                {
+                                    dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_RED] = 0;
+                                    dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_GREEN] = 0;
+                                    dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_BLUE] = 0;
+                                    dstBits[c * dstBytespp * scale + dst_c * dstBytespp + FI_RGBA_ALPHA] = 0;
+                                }
+                            }
                         }
                     }
                 }
