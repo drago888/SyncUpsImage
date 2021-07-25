@@ -197,7 +197,8 @@ int main(int argc, char** argv)
                 if (srcFileWoExt == dstFileWoExt)
                 {
                     // must be before rename else filename will be wrong
-                    int status = fixTransparent(srcPath, dstPath, scale, &filesTransparent, tolerance);
+                    //int status = fixTransparent(srcPath, dstPath, scale, &filesTransparent, tolerance);
+                    int status = 0;
 
                     matchingFileFound = true;
                     if (srcFileExt != dstFileExt)
